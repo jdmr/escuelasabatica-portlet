@@ -4,12 +4,12 @@
     xmlns="http://maven.apache.org/POM/4.0.0" 
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<groupId>mx.edu.um.portlets</groupId>
-	<artifactId>escuelasabatica-portlet</artifactId>
-	<packaging>war</packaging>
-	<name>Escuela Sabatica Portlet</name>
-	<version>1.0-SNAPSHOT</version>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>mx.edu.um.portlets</groupId>
+    <artifactId>escuelasabatica-portlet</artifactId>
+    <packaging>war</packaging>
+    <name>Escuela Sabatica Portlet</name>
+    <version>1.0-SNAPSHOT</version>
     <repositories>
         <repository>
             <id>JBoss</id>
@@ -18,27 +18,27 @@
             <url>http://repository.jboss.org/nexus/content/groups/public-jboss/</url>
         </repository>
     </repositories>
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>com.liferay.maven.plugins</groupId>
-				<artifactId>liferay-maven-plugin</artifactId>
-				<version>${liferay.version}</version>
-				<configuration>
-					<autoDeployDir>${liferay.auto.deploy.dir}</autoDeployDir>
-				</configuration>
-			</plugin>
-			<plugin>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<encoding>UTF-8</encoding>
-					<source>1.6</source>
-					<target>1.6</target>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
-	<dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.liferay.maven.plugins</groupId>
+                <artifactId>liferay-maven-plugin</artifactId>
+                <version>${liferay.version}</version>
+                <configuration>
+                    <autoDeployDir>${liferay.auto.deploy.dir}</autoDeployDir>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    <dependencies>
         <dependency>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
@@ -157,10 +157,10 @@
             <artifactId>commons-fileupload</artifactId>
             <version>1.2.1</version>
         </dependency>
-	</dependencies>
-	<properties>
+    </dependencies>
+    <properties>
         <liferay.auto.deploy.dir>/opt/portal/liferay-portal-6.0.5/deploy</liferay.auto.deploy.dir>
-		<liferay.version>6.0.5</liferay.version>
+        <liferay.version>6.0.5</liferay.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-	</properties>
+    </properties>
 </project>
