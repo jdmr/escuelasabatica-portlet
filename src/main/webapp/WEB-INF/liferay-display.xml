@@ -4,5 +4,6 @@
 <display>
     <category name="Escuela Sabatica">
         <portlet id="leccion" />
+        <portlet id="versiculo" />
     </category>
 </display>

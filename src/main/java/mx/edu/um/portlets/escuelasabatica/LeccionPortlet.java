@@ -1,4 +1,4 @@
-package mx.edu.um.portlets.lecciones;
+package mx.edu.um.portlets.escuelasabatica;
 
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -13,7 +13,6 @@ import com.liferay.portlet.journal.model.JournalArticle;
 import com.liferay.portlet.journal.service.JournalArticleLocalServiceUtil;
 import java.text.NumberFormat;
 import java.util.List;
-import java.util.Locale;
 import java.util.TimeZone;
 import javax.portlet.PortletPreferences;
 import javax.portlet.RenderRequest;
