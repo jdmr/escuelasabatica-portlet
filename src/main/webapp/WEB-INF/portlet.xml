@@ -20,7 +20,7 @@
             <mime-type>text/html</mime-type>
             <portlet-mode>VIEW</portlet-mode>
         </supports>
-        <resource-bundle>cursos</resource-bundle>
+        <resource-bundle>leccion</resource-bundle>
         <portlet-info>
             <title>Leccion</title>
             <short-title>Leccion</short-title>

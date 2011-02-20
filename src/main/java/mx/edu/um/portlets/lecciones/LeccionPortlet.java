@@ -13,6 +13,7 @@ import com.liferay.portlet.journal.model.JournalArticle;
 import com.liferay.portlet.journal.service.JournalArticleLocalServiceUtil;
 import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
 import java.util.TimeZone;
 import javax.portlet.PortletPreferences;
 import javax.portlet.RenderRequest;
@@ -20,11 +21,14 @@ import javax.portlet.RenderResponse;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Weeks;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  *
@@ -41,7 +45,7 @@ public class LeccionPortlet {
     }
 
     @RequestMapping
-    public String ver(RenderRequest request, RenderResponse response, Model model) {
+    public String ver(RenderRequest request, RenderResponse response, @RequestParam(required=false) Integer dias, Model model) {
         log.debug("Viendo la leccion");
         try {
             ThemeDisplay themeDisplay = (ThemeDisplay) request.getAttribute(WebKeys.THEME_DISPLAY);
@@ -57,7 +61,17 @@ public class LeccionPortlet {
             AssetEntryQuery assetEntryQuery = new AssetEntryQuery();
 
             TimeZone tz = themeDisplay.getTimeZone();
-            long[] assetTagIds = AssetTagLocalServiceUtil.getTagIds(scopeGroupId, getTags(tz));
+            DateTimeZone zone = DateTimeZone.forID(tz.getID());
+            DateTime hoy = new DateTime(zone);
+            log.debug("Dias: {}", dias);
+            if (dias != null && dias < 0) {
+                int temp = dias * (-1);
+                log.debug("Menos: {}",temp);
+                hoy = hoy.minusDays(dias*(-1));
+            } else if (dias != null && dias > 0) {
+                hoy = hoy.plusDays(dias);
+            }
+            long[] assetTagIds = AssetTagLocalServiceUtil.getTagIds(scopeGroupId, getTags(hoy));
 
             assetEntryQuery.setAllTagIds(assetTagIds);
 
@@ -70,6 +84,10 @@ public class LeccionPortlet {
                     String contenido = JournalArticleLocalServiceUtil.getArticleContent(ja.getGroupId(), ja.getArticleId(), "view", ""+themeDisplay.getLocale(), themeDisplay);
                     model.addAttribute("leccion",ja);
                     model.addAttribute("contenido",contenido);
+                    model.addAttribute("dias",dias);
+                    DateTimeFormatter fmt = DateTimeFormat.forPattern("EEEE dd/MM/yyyy");
+                    DateTimeFormatter fmt2 = fmt.withLocale(themeDisplay.getLocale());
+                    model.addAttribute("fecha",fmt2.print(hoy));
                 }
             }
             
@@ -83,30 +101,28 @@ public class LeccionPortlet {
         return "leccion/ver";
     }
 
-    private String[] getTags(TimeZone tz) {
-        DateTimeZone zone = DateTimeZone.forID(tz.getID());
+    private String[] getTags(DateTime hoy) {
         String[] tags = new String[4];
         DateTime inicio = null;
-        DateTime hoy = new DateTime(zone);
         log.debug("HOY: {}",hoy);
         tags[0] = new Integer(hoy.getYear()).toString();
         if (hoy.getMonthOfYear() < 4) {
-            inicio = new DateTime(hoy.getYear(), 1, 1, 0, 0, 0, 0, zone);
+            inicio = new DateTime(hoy.getYear(), 1, 1, 0, 0, 0, 0, hoy.getZone());
             tags[1] = "t1";
         } else if (hoy.getMonthOfYear() < 7) {
-            inicio = new DateTime(hoy.getYear(), 4, 1, 0, 0, 0, 0, zone);
+            inicio = new DateTime(hoy.getYear(), 4, 1, 0, 0, 0, 0, hoy.getZone());
             tags[1] = "t2";
         } else if (hoy.getMonthOfYear() < 10) {
-            inicio = new DateTime(hoy.getYear(), 7, 1, 0, 0, 0, 0, zone);
+            inicio = new DateTime(hoy.getYear(), 7, 1, 0, 0, 0, 0, hoy.getZone());
             tags[1] = "t3";
         } else {
-            inicio = new DateTime(hoy.getYear(), 10, 1, 0, 0, 0, 0, zone);
+            inicio = new DateTime(hoy.getYear(), 10, 1, 0, 0, 0, 0, hoy.getZone());
             tags[1] = "t4";
         }
         NumberFormat nf = NumberFormat.getInstance();
         nf.setMinimumIntegerDigits(2);
         Weeks weeks = Weeks.weeksBetween(inicio, hoy);
-        tags[2] = "l" + nf.format(weeks.getWeeks() + 1);
+        tags[2] = "l" + nf.format(weeks.getWeeks() + 2);
         switch (hoy.getDayOfWeek()) {
             case 1:
                 tags[3] = "lunes";
@@ -124,11 +140,11 @@ public class LeccionPortlet {
                 tags[3] = "viernes";
                 break;
             case 6:
-                tags[2] = "l" + nf.format(weeks.getWeeks() + 2);
+                //tags[2] = "l" + nf.format(weeks.getWeeks() + 2);
                 tags[3] = "sabado";
                 break;
             case 7:
-                tags[2] = "l" + nf.format(weeks.getWeeks() + 2);
+                //tags[2] = "l" + nf.format(weeks.getWeeks() + 2);
                 tags[3] = "domingo";
                 break;
         }
