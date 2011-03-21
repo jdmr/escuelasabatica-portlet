@@ -30,5 +30,7 @@
 
 <%@ taglib prefix="html" tagdir="/WEB-INF/tags/html" %>
 
+<%@ page import="com.liferay.portal.kernel.util.Validator" %>
+
 <portlet:defineObjects />
 <liferay-theme:defineObjects />
