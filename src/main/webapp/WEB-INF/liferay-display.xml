@@ -6,5 +6,6 @@
         <portlet id="leccion" />
         <portlet id="versiculo" />
         <portlet id="blogger" />
+        <portlet id="conocenos" />
     </category>
 </display>

@@ -12,7 +12,9 @@ import com.liferay.portlet.asset.service.persistence.AssetEntryQuery;
 import com.liferay.portlet.journal.model.JournalArticle;
 import com.liferay.portlet.journal.service.JournalArticleLocalServiceUtil;
 import java.text.NumberFormat;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 import javax.portlet.PortletPreferences;
 import javax.portlet.RenderRequest;
@@ -38,6 +40,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class VersiculoPortlet {
 
     private static final Logger log = LoggerFactory.getLogger(VersiculoPortlet.class);
+    /** Cache of old zone IDs to new zone IDs */
+    private static Map<String, String> cZoneIdConversion;
 
     public VersiculoPortlet() {
         log.debug("Se ha creado una nueva instancia del portlet de versiculos");
@@ -46,8 +50,16 @@ public class VersiculoPortlet {
     @RequestMapping
     public String ver(RenderRequest request, RenderResponse response, @RequestParam(required=false) Integer dias, Model model) {
         log.debug("Viendo el versiculo");
+        TimeZone tz = null;
+        DateTimeZone zone = null;
+        ThemeDisplay themeDisplay = (ThemeDisplay) request.getAttribute(WebKeys.THEME_DISPLAY);
         try {
-            ThemeDisplay themeDisplay = (ThemeDisplay) request.getAttribute(WebKeys.THEME_DISPLAY);
+            tz = themeDisplay.getTimeZone();
+            zone = DateTimeZone.forID(tz.getID());
+        } catch(IllegalArgumentException e) {
+            zone = DateTimeZone.forID(VersiculoPortlet.getConvertedId(tz.getID()));
+        }
+        try {
             PortletPreferences preferences = request.getPreferences();
             String portletResource = ParamUtil.getString(request, "portletResource");
 
@@ -59,8 +71,6 @@ public class VersiculoPortlet {
 
             AssetEntryQuery assetEntryQuery = new AssetEntryQuery();
 
-            TimeZone tz = themeDisplay.getTimeZone();
-            DateTimeZone zone = DateTimeZone.forID(tz.getID());
             DateTime hoy = new DateTime(zone);
             log.debug("Dias: {}", dias);
             if (dias != null && dias < 0) {
@@ -102,30 +112,63 @@ public class VersiculoPortlet {
 
     private String[] getTags(DateTime hoy) {
         String[] tags = new String[4];
-        DateTime inicio = null;
+        DateTime inicio = new DateTime(hoy.getYear(), 3, 26, 0, 0, 0, 0, hoy.getZone());
         log.debug("HOY: {}",hoy);
-        tags[0] = new Integer(hoy.getYear()).toString();
-        if (hoy.getMonthOfYear() < 4) {
-            inicio = new DateTime(hoy.getYear(), 1, 1, 0, 0, 0, 0, hoy.getZone());
-            tags[1] = "t1";
-        } else if (hoy.getMonthOfYear() < 7) {
-            inicio = new DateTime(hoy.getYear(), 4, 1, 0, 0, 0, 0, hoy.getZone());
-            tags[1] = "t2";
-        } else if (hoy.getMonthOfYear() < 10) {
-            inicio = new DateTime(hoy.getYear(), 7, 1, 0, 0, 0, 0, hoy.getZone());
-            tags[1] = "t3";
-        } else {
-            inicio = new DateTime(hoy.getYear(), 10, 1, 0, 0, 0, 0, hoy.getZone());
-            tags[1] = "t4";
-        }
         NumberFormat nf = NumberFormat.getInstance();
         nf.setMinimumIntegerDigits(2);
-        Weeks weeks = Weeks.weeksBetween(inicio, hoy);
-        tags[2] = "l" + nf.format(weeks.getWeeks() + 2);
+        tags[0] = new Integer(hoy.getYear()).toString();
+        tags[1] = "t2";
+        if (hoy.isBefore(inicio)) {
+            tags[2] = "l01";
+        } else {
+            Weeks weeks = Weeks.weeksBetween(inicio, hoy);
+            tags[2] = "l"+nf.format(weeks.getWeeks()+1);
+        }
         tags[3] = "versiculo";
         log.debug("TAGS: {} {} {} {}", tags);
 
         return tags;
     }
 
+    private static synchronized String getConvertedId(String id) {
+        Map<String, String> map = cZoneIdConversion;
+        if (map == null) {
+            // Backwards compatibility with TimeZone.
+            map = new HashMap<String, String>();
+            map.put("GMT", "UTC");
+            map.put("MIT", "Pacific/Apia");
+            map.put("HST", "Pacific/Honolulu");
+            map.put("AST", "America/Anchorage");
+            map.put("PST", "America/Los_Angeles");
+            map.put("MST", "America/Denver");
+            map.put("PNT", "America/Phoenix");
+            map.put("CST", "America/Chicago");
+            map.put("EST", "America/New_York");
+            map.put("IET", "America/Indianapolis");
+            map.put("PRT", "America/Puerto_Rico");
+            map.put("CNT", "America/St_Johns");
+            map.put("AGT", "America/Buenos_Aires");
+            map.put("BET", "America/Sao_Paulo");
+            map.put("WET", "Europe/London");
+            map.put("ECT", "Europe/Paris");
+            map.put("ART", "Africa/Cairo");
+            map.put("CAT", "Africa/Harare");
+            map.put("EET", "Europe/Bucharest");
+            map.put("EAT", "Africa/Addis_Ababa");
+            map.put("MET", "Asia/Tehran");
+            map.put("NET", "Asia/Yerevan");
+            map.put("PLT", "Asia/Karachi");
+            map.put("IST", "Asia/Calcutta");
+            map.put("BST", "Asia/Dhaka");
+            map.put("VST", "Asia/Saigon");
+            map.put("CTT", "Asia/Shanghai");
+            map.put("JST", "Asia/Tokyo");
+            map.put("ACT", "Australia/Darwin");
+            map.put("AET", "Australia/Sydney");
+            map.put("SST", "Pacific/Guadalcanal");
+            map.put("NST", "Pacific/Auckland");
+            cZoneIdConversion = map;
+        }
+        return (String) map.get(id);
+    }
 }

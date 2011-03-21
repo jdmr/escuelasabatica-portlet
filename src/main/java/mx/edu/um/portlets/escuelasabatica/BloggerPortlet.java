@@ -39,7 +39,7 @@ public class BloggerPortlet {
     private static final Logger log = LoggerFactory.getLogger(BloggerPortlet.class);
 
     public BloggerPortlet() {
-        log.debug("Se ha creado una nueva instancia del portlet de versiculos");
+        log.debug("Se ha creado una nueva instancia del portlet de blogger");
     }
 
     @RequestMapping

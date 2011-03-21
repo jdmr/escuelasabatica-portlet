@@ -1,13 +1,13 @@
 package mx.edu.um.portlets.escuelasabatica.util;
 
-import com.liferay.portlet.blogs.model.BlogsEntry;
 import com.liferay.portlet.blogs.model.BlogsStatsUser;
+import java.io.Serializable;
 
 /**
  *
  * @author jdmr
  */
-public class Resultado {
+public class Resultado implements Serializable {
 
     private BlogsStatsUser statsUser;
     private String url;
