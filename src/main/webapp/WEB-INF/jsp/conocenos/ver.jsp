@@ -14,6 +14,7 @@
                 <p><c:if test="${not empty perfil.twitter}">Twitter:  <a class="user-twitter-link" href="http://twitter.com/${perfil.twitter}">${perfil.twitter}</a></c:if></p>
                 <p><c:if test="${not empty perfil.facebook}">Facebook: ${perfil.facebook}</c:if></p>
                 <p>${perfil.resena}</p>
+                <p><a href="${perfil.urlPerfil}">Ver más...</a></p>
             </td>
         </tr>
         </c:forEach>

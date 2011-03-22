@@ -7,6 +7,7 @@ import java.io.Serializable;
  * @author jdmr
  */
 public class Perfil implements Serializable {
+
     private String nombre;
     private String titulo;
     private String twitter;
@@ -14,10 +15,12 @@ public class Perfil implements Serializable {
     private String resena;
     private String imagen;
     private String correo;
-    
-    public Perfil() {}
+    private String urlPerfil;
 
-    public Perfil(String nombre, String titulo, String twitter, String facebook, String resena, String imagen, String correo) {
+    public Perfil() {
+    }
+
+    public Perfil(String nombre, String titulo, String twitter, String facebook, String resena, String imagen, String correo, String urlPerfil) {
         this.nombre = nombre;
         this.titulo = titulo;
         this.twitter = twitter;
@@ -25,6 +28,7 @@ public class Perfil implements Serializable {
         this.resena = resena;
         this.imagen = imagen;
         this.correo = correo;
+        this.urlPerfil = urlPerfil;
     }
 
     /**
@@ -111,5 +115,13 @@ public class Perfil implements Serializable {
 
     public void setCorreo(String correo) {
         this.correo = correo;
+    }
+
+    public String getUrlPerfil() {
+        return urlPerfil;
+    }
+
+    public void setUrlPerfil(String urlPerfil) {
+        this.urlPerfil = urlPerfil;
     }
 }

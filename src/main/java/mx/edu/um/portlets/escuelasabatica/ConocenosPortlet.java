@@ -46,7 +46,8 @@ public class ConocenosPortlet {
             for(User usuario : usuarios) {
                 String acercaDe = HtmlUtil.escape(ExpandoValueLocalServiceUtil.getData(usuario.getCompanyId(), User.class.getName(), "SN", "aboutMe", usuario.getUserId(), StringPool.BLANK)); 
                 String imagen = themeDisplay.getPathImage() + "/user_portrait?img_id=" + usuario.getPortraitId() + "&t=" + ImageServletTokenUtil.getToken(usuario.getPortraitId());
-                
+                String profileUrl = "/web/" + usuario.getScreenName();
+
                 perfiles.add(
                         new Perfil(
                         usuario.getFullName()
@@ -56,6 +57,7 @@ public class ConocenosPortlet {
                         ,acercaDe
                         ,imagen
                         ,usuario.getEmailAddress()
+                        ,profileUrl
                         ));
             }
             request.setAttribute("perfiles", perfiles);

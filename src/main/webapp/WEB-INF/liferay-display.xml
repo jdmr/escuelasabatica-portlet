@@ -7,5 +7,6 @@
         <portlet id="versiculo" />
         <portlet id="blogger" />
         <portlet id="conocenos" />
+        <portlet id="biblia" />
     </category>
 </display>

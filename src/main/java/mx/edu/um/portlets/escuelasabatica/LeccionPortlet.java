@@ -71,16 +71,18 @@ public class LeccionPortlet {
 
             AssetEntryQuery assetEntryQuery = new AssetEntryQuery();
 
-            DateTime hoy = new DateTime(zone);
+            DateTime hoy = (DateTime)request.getPortletSession().getAttribute("hoy");
+            if (hoy == null) {
+                hoy = new DateTime(zone);
+            }
+            
             DateTime inicio = new DateTime(hoy.getYear(), 3, 26, 0, 0, 0, 0, hoy.getZone());
             if (hoy.isBefore(inicio)) {
                 hoy = hoy.withDayOfMonth(26);
             }
-
+            
             log.debug("Dias: {}", dias);
             if (dias != null && dias < 0) {
-                int temp = dias * (-1);
-                log.debug("Menos: {}", temp);
                 hoy = hoy.minusDays(dias * (-1));
             } else if (dias != null && dias > 0) {
                 hoy = hoy.plusDays(dias);
@@ -88,6 +90,7 @@ public class LeccionPortlet {
             if (hoy.isBefore(inicio)) {
                 hoy = hoy.withDayOfMonth(26);
             }
+            request.getPortletSession().setAttribute("hoy", hoy);
             long[] assetTagIds = AssetTagLocalServiceUtil.getTagIds(scopeGroupId, getTags(hoy));
 
             //assetEntryQuery.setAllTagIds(assetTagIds);
@@ -102,7 +105,7 @@ public class LeccionPortlet {
                     String contenido = JournalArticleLocalServiceUtil.getArticleContent(ja.getGroupId(), ja.getArticleId(), "view", "" + themeDisplay.getLocale(), themeDisplay);
                     model.addAttribute("leccion", ja);
                     model.addAttribute("contenido", contenido);
-                    model.addAttribute("dias", dias);
+                    //model.addAttribute("dias", dias);
                     DateTimeFormatter fmt = DateTimeFormat.forPattern("EEEE dd/MM/yyyy");
                     DateTimeFormatter fmt2 = fmt.withLocale(themeDisplay.getLocale());
                     model.addAttribute("fecha", fmt2.print(hoy));
