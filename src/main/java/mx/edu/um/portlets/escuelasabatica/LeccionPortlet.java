@@ -16,9 +16,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import javax.portlet.ActionRequest;
+import javax.portlet.ActionResponse;
 import javax.portlet.PortletPreferences;
 import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
+import mx.edu.um.portlets.escuelasabatica.util.Resultado;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Weeks;
@@ -28,8 +31,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.support.SessionStatus;
 
 /**
  *
@@ -71,16 +77,16 @@ public class LeccionPortlet {
 
             AssetEntryQuery assetEntryQuery = new AssetEntryQuery();
 
-            DateTime hoy = (DateTime)request.getPortletSession().getAttribute("hoy");
+            DateTime hoy = (DateTime) request.getPortletSession().getAttribute("hoy");
             if (hoy == null) {
                 hoy = new DateTime(zone);
             }
-            
+
             DateTime inicio = new DateTime(hoy.getYear(), 3, 26, 0, 0, 0, 0, hoy.getZone());
             if (hoy.isBefore(inicio)) {
                 hoy = hoy.withDayOfMonth(26);
             }
-            
+
             log.debug("Dias: {}", dias);
             if (dias != null && dias < 0) {
                 hoy = hoy.minusDays(dias * (-1));
@@ -108,7 +114,9 @@ public class LeccionPortlet {
                     //model.addAttribute("dias", dias);
                     DateTimeFormatter fmt = DateTimeFormat.forPattern("EEEE dd/MM/yyyy");
                     DateTimeFormatter fmt2 = fmt.withLocale(themeDisplay.getLocale());
-                    model.addAttribute("fecha", fmt2.print(hoy));
+                    StringBuilder sb = new StringBuilder(fmt2.print(hoy));
+                    sb.replace(0, 1, sb.substring(0, 1).toUpperCase());
+                    model.addAttribute("fecha", sb.toString());
                 }
             }
 
@@ -120,6 +128,44 @@ public class LeccionPortlet {
 
 
         return "leccion/ver";
+    }
+
+    @RequestMapping(params = "action=navega")
+    public void navega(ActionRequest request, ActionResponse response,
+            @ModelAttribute("resultado") Resultado resultado, BindingResult result,
+            Model model, SessionStatus sessionStatus, @RequestParam(required = false) Integer dias) {
+        log.debug("Navegando");
+        TimeZone tz = null;
+        DateTimeZone zone = null;
+        ThemeDisplay themeDisplay = (ThemeDisplay) request.getAttribute(WebKeys.THEME_DISPLAY);
+        try {
+            tz = themeDisplay.getTimeZone();
+            zone = DateTimeZone.forID(tz.getID());
+        } catch (IllegalArgumentException e) {
+            zone = DateTimeZone.forID(LeccionPortlet.getConvertedId(tz.getID()));
+        }
+        DateTime hoy = (DateTime) request.getPortletSession().getAttribute("hoy");
+        if (hoy == null) {
+            hoy = new DateTime(zone);
+        }
+
+        DateTime inicio = new DateTime(hoy.getYear(), 3, 26, 0, 0, 0, 0, hoy.getZone());
+        if (hoy.isBefore(inicio)) {
+            hoy = hoy.withDayOfMonth(26);
+        }
+
+        log.debug("Dias: {}", dias);
+        if (dias != null && dias < 0) {
+            hoy = hoy.minusDays(dias * (-1));
+        } else if (dias != null && dias > 0) {
+            hoy = hoy.plusDays(dias);
+        }
+        if (hoy.isBefore(inicio)) {
+            hoy = hoy.withDayOfMonth(26);
+        }
+        request.getPortletSession().setAttribute("hoy", hoy);
+        sessionStatus.setComplete();
+
     }
 
     private String[] getTags(DateTime hoy) {

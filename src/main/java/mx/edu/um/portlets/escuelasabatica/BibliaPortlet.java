@@ -45,6 +45,7 @@ public class BibliaPortlet {
             , Model model) {
         log.debug("Mostrando versiculo");
         log.debug("Parameters: {}",request.getParameterMap());
+        String url = "jdbc:postgresql://rigel.um.edu.mx/biblias";
         if (vid != null) {
                         Connection conn = null;
             PreparedStatement ps = null;
@@ -52,7 +53,7 @@ public class BibliaPortlet {
             try {
                 //conn = bibliaDS.getConnection();
                 Class.forName("org.postgresql.Driver");
-                conn = DriverManager.getConnection("jdbc:postgresql:biblias","tomcat","tomcat00");
+                conn = DriverManager.getConnection(url,"tomcat","tomcat00");
                 StringBuilder sb = new StringBuilder();
                 sb.append("select v.id, v.versiculo, l.nombre as libro, v.texto, v.libro_id, v.capitulo from ");
                 if (version != null) {
@@ -125,7 +126,7 @@ public class BibliaPortlet {
             try {
                 //conn = bibliaDS.getConnection();
                 Class.forName("org.postgresql.Driver");
-                conn = DriverManager.getConnection("jdbc:postgresql:biblias","tomcat","tomcat00");
+                conn = DriverManager.getConnection(url,"tomcat","tomcat00");
                 StringBuilder sb = new StringBuilder();
                 sb.append("select v.id, v.versiculo, l.nombre as libro, v.texto, v.libro_id, v.capitulo from ");
                 if (version != null) {
