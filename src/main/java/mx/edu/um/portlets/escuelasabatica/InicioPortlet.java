@@ -1,5 +1,6 @@
 package mx.edu.um.portlets.escuelasabatica;
 
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.portlet.asset.model.AssetEntry;
@@ -13,11 +14,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
-import mx.edu.um.portlets.escuelasabatica.util.Resultado;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Weeks;
@@ -27,11 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.support.SessionStatus;
 
 /**
  *
@@ -39,19 +33,19 @@ import org.springframework.web.bind.support.SessionStatus;
  */
 @Controller
 @RequestMapping("VIEW")
-public class LeccionPortlet {
+public class InicioPortlet {
 
-    private static final Logger log = LoggerFactory.getLogger(LeccionPortlet.class);
+    private static final Logger log = LoggerFactory.getLogger(InicioPortlet.class);
     /** Cache of old zone IDs to new zone IDs */
     private static Map<String, String> cZoneIdConversion;
 
-    public LeccionPortlet() {
-        log.debug("Se ha creado una nueva instancia del portlet de lecciones");
+    public InicioPortlet() {
+        log.debug("Se ha creado una nueva instancia del portlet de inicio");
     }
 
     @RequestMapping
     public String ver(RenderRequest request, RenderResponse response, Model model) {
-        log.debug("Viendo la leccion");
+        log.debug("Mostrando el inicio");
         TimeZone tz = null;
         DateTimeZone zone = null;
         ThemeDisplay themeDisplay = (ThemeDisplay) request.getAttribute(WebKeys.THEME_DISPLAY);
@@ -59,7 +53,7 @@ public class LeccionPortlet {
             tz = themeDisplay.getTimeZone();
             zone = DateTimeZone.forID(tz.getID());
         } catch (IllegalArgumentException e) {
-            zone = DateTimeZone.forID(LeccionPortlet.getConvertedId(tz.getID()));
+            zone = DateTimeZone.forID(InicioPortlet.getConvertedId(tz.getID()));
         }
         try {
             long scopeGroupId = themeDisplay.getScopeGroupId();
@@ -77,19 +71,39 @@ public class LeccionPortlet {
             }
             request.getPortletSession().setAttribute("hoy", hoy);
 
-            long[] assetTagIds = AssetTagLocalServiceUtil.getTagIds(scopeGroupId, getTags(hoy));
+            // Tags para buscar el titulo del sabado
+            String[] tags = getTags(hoy);
+            tags[3] = "sabado";
+            long[] assetTagIds = AssetTagLocalServiceUtil.getTagIds(scopeGroupId, tags);
 
             assetEntryQuery.setAllTagIds(assetTagIds);
 
             List<AssetEntry> results = AssetEntryServiceUtil.getEntries(assetEntryQuery);
 
+            log.debug("Buscando el titulo principal");
+            for (AssetEntry asset : results) {
+                log.debug("Asset: " + asset.getTitle() + " : " + asset.getDescription() + " : " + asset.getMimeType() + " : " + asset.getClassName());
+                if (asset.getClassName().equals("com.liferay.portlet.journal.model.JournalArticle")) {
+                    model.addAttribute("tituloPrincipal", asset.getTitle().toUpperCase());
+                }
+            }
+
+            // Tags para buscar el titulo del sabado
+            assetTagIds = AssetTagLocalServiceUtil.getTagIds(scopeGroupId, getTags(hoy));
+
+            assetEntryQuery.setAllTagIds(assetTagIds);
+
+            results = AssetEntryServiceUtil.getEntries(assetEntryQuery);
+
+            log.debug("Buscando la leccion del dia {}", hoy);
             for (AssetEntry asset : results) {
                 log.debug("Asset: " + asset.getTitle() + " : " + asset.getDescription() + " : " + asset.getMimeType() + " : " + asset.getClassName());
                 if (asset.getClassName().equals("com.liferay.portlet.journal.model.JournalArticle")) {
                     JournalArticle ja = JournalArticleLocalServiceUtil.getLatestArticle(asset.getClassPK());
                     String contenido = JournalArticleLocalServiceUtil.getArticleContent(ja.getGroupId(), ja.getArticleId(), "view", "" + themeDisplay.getLocale(), themeDisplay);
                     model.addAttribute("leccion", ja);
-                    model.addAttribute("contenido", contenido);
+                    model.addAttribute("titulo", asset.getTitle().toUpperCase());
+                    model.addAttribute("contenido", StringUtil.shorten(contenido, 450));
                     DateTimeFormatter fmt = DateTimeFormat.forPattern("EEEE dd/MM/yyyy");
                     DateTimeFormatter fmt2 = fmt.withLocale(themeDisplay.getLocale());
                     StringBuilder sb = new StringBuilder(fmt2.print(hoy));
@@ -98,52 +112,48 @@ public class LeccionPortlet {
                 }
             }
 
+            /*
+            log.debug("Buscando los blogs de dialoga");
+            tags[3] = "dialoga";
+            assetTagIds = AssetTagLocalServiceUtil.getTagIds(scopeGroupId, tags);
+            assetEntryQuery.setAllTagIds(assetTagIds);
+            results = AssetEntryServiceUtil.getEntries(assetEntryQuery);
+            List<Entrada> entries = new ArrayList<Entrada>();
+            for (AssetEntry asset : results) {
+                log.debug("Asset: " + asset.getTitle() + " : " + asset.getDescription() + " : " + asset.getMimeType() + " : " + asset.getClassName());
+                if (asset.getClassName().equals("com.liferay.portlet.blogs.model.BlogsEntry")) {
+                    BlogsEntry entry = BlogsEntryLocalServiceUtil.getEntry(asset.getClassPK());
+                    String resumen = StringUtil.shorten(entry.getContent(), 200);
+                    entries.add(new Entrada(entry.getEntryId(), asset.getPrimaryKey(), resumen));
+                }
+            }
+
+            model.addAttribute("dialoga", entries);
+
+            log.debug("Buscando los blogs de comunica");
+            tags[3] = "comunica";
+            assetTagIds = AssetTagLocalServiceUtil.getTagIds(scopeGroupId, tags);
+            assetEntryQuery.setAllTagIds(assetTagIds);
+            results = AssetEntryServiceUtil.getEntries(assetEntryQuery);
+            entries = new ArrayList<Entrada>();
+            for (AssetEntry asset : results) {
+                log.debug("Asset: " + asset.getTitle() + " : " + asset.getDescription() + " : " + asset.getMimeType() + " : " + asset.getClassName());
+                if (asset.getClassName().equals("com.liferay.portlet.blogs.model.BlogsEntry")) {
+                    BlogsEntry entry = BlogsEntryLocalServiceUtil.getEntry(asset.getClassPK());
+                    String resumen = StringUtil.shorten(entry.getContent(), 200);
+                    entries.add(new Entrada(entry.getEntryId(), asset.getPrimaryKey(), resumen));
+                }
+            }
+
+            model.addAttribute("comunica", entries);
+            */
+
         } catch (Exception e) {
             log.error("No se pudo cargar el contenido", e);
             throw new RuntimeException("No se pudo cargar el contenido", e);
         }
 
-
-
-        return "leccion/ver";
-    }
-
-    @RequestMapping(params = "action=navega")
-    public void navega(ActionRequest request, ActionResponse response,
-            @ModelAttribute("resultado") Resultado resultado, BindingResult result,
-            Model model, SessionStatus sessionStatus, @RequestParam(required = false) Integer dias) {
-        log.debug("Navegando");
-        TimeZone tz = null;
-        DateTimeZone zone = null;
-        ThemeDisplay themeDisplay = (ThemeDisplay) request.getAttribute(WebKeys.THEME_DISPLAY);
-        try {
-            tz = themeDisplay.getTimeZone();
-            zone = DateTimeZone.forID(tz.getID());
-        } catch (IllegalArgumentException e) {
-            zone = DateTimeZone.forID(LeccionPortlet.getConvertedId(tz.getID()));
-        }
-        DateTime hoy = (DateTime) request.getPortletSession().getAttribute("hoy");
-        if (hoy == null) {
-            hoy = new DateTime(zone);
-        }
-
-        DateTime inicio = new DateTime(hoy.getYear(), 3, 26, 0, 0, 0, 0, hoy.getZone());
-        if (hoy.isBefore(inicio)) {
-            hoy = hoy.withDayOfMonth(26);
-        }
-
-        log.debug("Dias: {}", dias);
-        if (dias != null && dias < 0) {
-            hoy = hoy.minusDays(dias * (-1));
-        } else if (dias != null && dias > 0) {
-            hoy = hoy.plusDays(dias);
-        }
-        if (hoy.isBefore(inicio)) {
-            hoy = hoy.withDayOfMonth(26);
-        }
-        request.getPortletSession().setAttribute("hoy", hoy);
-        sessionStatus.setComplete();
-
+        return "inicio/ver";
     }
 
     private String[] getTags(DateTime hoy) {

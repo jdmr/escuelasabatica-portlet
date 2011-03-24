@@ -12,6 +12,7 @@ import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.portal.util.PortalUtil;
 import com.liferay.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portlet.asset.model.AssetEntry;
+import com.liferay.portlet.asset.model.AssetTag;
 import com.liferay.portlet.asset.service.AssetEntryServiceUtil;
 import com.liferay.portlet.asset.service.AssetTagLocalServiceUtil;
 import com.liferay.portlet.asset.service.persistence.AssetEntryQuery;
@@ -115,7 +116,7 @@ public class ComunicaPortlet {
             log.error("No se pudo cargar el contenido", e);
             throw new RuntimeException("No se pudo cargar el contenido", e);
         }
-        return "dialoga/ver";
+        return "comunica/ver";
     }
 
     @RequestMapping(params = "action=completo")
@@ -134,12 +135,31 @@ public class ComunicaPortlet {
             if (discussionMessagesCount > 0) {
                 model.addAttribute("discussionMessages", true);
             }
+            
+            List<AssetTag> tags = assetEntry.getTags();
+            AssetEntryQuery assetEntryQuery = new AssetEntryQuery();
+            long[] assetTagIds = new long[tags.size()];
+            int i = 0;
+            for (AssetTag tag : tags) {
+                assetTagIds[i++] = tag.getTagId();
+            }
+            assetEntryQuery.setAllTagIds(assetTagIds);
+            List<AssetEntry> results = AssetEntryServiceUtil.getEntries(assetEntryQuery);
+
+            for (AssetEntry asset : results) {
+                log.debug("Asset: " + asset.getTitle() + " : " + asset.getDescription() + " : " + asset.getMimeType() + " : " + asset.getClassName());
+                if (asset.getClassName().equals("com.liferay.portlet.messageboards.model.MBMessage")) {
+                    log.debug("MBMessage: {} {}",asset.getPrimaryKey(), asset.getClassPK());
+                    model.addAttribute("messageUrl","/foros/-/message_boards/view_message/"+asset.getClassPK());
+                    break;
+                }
+            }
 
         } catch (Exception e) {
             log.error("No se pudo cargar el contenido", e);
             throw new RuntimeException("No se pudo cargar el contenido", e);
         }
-        return "dialoga/completo";
+        return "comunica/completo";
     }
 
     @RequestMapping(params = "action=discusion")

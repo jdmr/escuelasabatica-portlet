@@ -34,7 +34,7 @@
         <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid=ra-4d8a78014d97ad87"></script>
         <!-- AddThis Button END -->
     </div>
-    <div>
+    <div style="padding: 10px 0;">
         <c:if test="${discussionMessages != null}">
             <liferay-ui:tabs names="comments" />
         </c:if>
@@ -56,7 +56,10 @@
             ratingsEnabled="true"
             />
     </div>
-    <div style="padding: 20px 0;">
+    <div style="padding: 0px 10px 0 0;float:left;">
+        <a class="importante" href="${messageUrl}" target="_blank">Discútelo con nosotros</a>
+    </div>
+    <div>
         <a class="importante" href="${regresar}">Regresar</a>
     </div>
 </div>
