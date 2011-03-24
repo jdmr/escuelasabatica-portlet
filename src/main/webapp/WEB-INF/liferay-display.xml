@@ -9,5 +9,6 @@
         <portlet id="conocenos" />
         <portlet id="biblia" />
         <portlet id="dialoga" />
+        <portlet id="comunica" />
     </category>
 </display>

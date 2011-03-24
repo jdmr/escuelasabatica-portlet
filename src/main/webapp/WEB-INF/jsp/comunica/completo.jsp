@@ -1,6 +1,6 @@
 <%@ include file="/WEB-INF/jsp/include.jsp" %>
 <portlet:renderURL var="regresar" />
-<h1><a href="${regresar}">Dialoga</a></h1>
+<h1><a href="${regresar}">Comunica</a></h1>
 <div>${entrada.content}</div>
 <div>
     <div>
