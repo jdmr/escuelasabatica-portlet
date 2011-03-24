@@ -8,5 +8,6 @@
         <portlet id="blogger" />
         <portlet id="conocenos" />
         <portlet id="biblia" />
+        <portlet id="dialoga" />
     </category>
 </display>

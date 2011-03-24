@@ -10,24 +10,13 @@
     <!--bean id="portletMultipartResolver" class="org.springframework.web.portlet.multipart.CommonsPortletMultipartResolver">
         <property name="maxUploadSize" value="1048576" />
     </bean-->
-    
-    <bean id="bibliaDS" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
-        <property name="driverClassName" value="org.postgresql.Driver" />
-        <property name="url" value="jdbc:postgresql://rigel.um.edu.mx/biblias" />
-        <property name="username" value="tomcat" />
-        <property name="password" value="tomcat00" />
-        <property name="maxIdle" value="10"/>
-        <property name="maxActive" value="100"/>
-        <property name="maxWait" value="10000"/>
-        <property name="validationQuery" value="select version();"/>
-    </bean>
 
     <!-- Handler Mappings -->
 
     <bean id="portletModeHandlerMapping" class="org.springframework.web.portlet.handler.PortletModeHandlerMapping">
         <property name="portletModeMap">
             <map> 
-                <entry key="view" value-ref="bibliaPortlet" />
+                <entry key="view" value-ref="dialogaPortlet" />
             </map> 
         </property>
     </bean>
@@ -41,7 +30,7 @@
     <bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource">
         <property name="basenames">
             <list>
-                <value>biblia</value> <!-- (localized "messages_xx.properties" files) -->
+                <value>dialoga</value> <!-- (localized "messages_xx.properties" files) -->
             </list>
         </property>
     </bean>
