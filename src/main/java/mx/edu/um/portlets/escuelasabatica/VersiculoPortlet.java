@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import javax.portlet.PortletPreferences;
+import javax.portlet.PortletSession;
 import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
 import org.joda.time.DateTime;
@@ -71,14 +72,10 @@ public class VersiculoPortlet {
 
             AssetEntryQuery assetEntryQuery = new AssetEntryQuery();
 
-            DateTime hoy = new DateTime(zone);
-            log.debug("Dias: {}", dias);
-            if (dias != null && dias < 0) {
-                int temp = dias * (-1);
-                log.debug("Menos: {}",temp);
-                hoy = hoy.minusDays(dias*(-1));
-            } else if (dias != null && dias > 0) {
-                hoy = hoy.plusDays(dias);
+            DateTime hoy = (DateTime) request.getPortletSession().getAttribute("hoy", PortletSession.APPLICATION_SCOPE);
+            if (hoy == null) {
+                log.warn("No encontre el atributo hoy");
+                hoy = new DateTime(zone);
             }
             long[] assetTagIds = AssetTagLocalServiceUtil.getTagIds(scopeGroupId, getTags(hoy));
 

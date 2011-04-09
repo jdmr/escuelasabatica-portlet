@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import javax.portlet.PortletSession;
 import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
 import org.joda.time.DateTime;
@@ -60,7 +61,7 @@ public class InicioPortlet {
 
             AssetEntryQuery assetEntryQuery = new AssetEntryQuery();
 
-            DateTime hoy = (DateTime) request.getPortletSession().getAttribute("hoy");
+            DateTime hoy = (DateTime) request.getPortletSession().getAttribute("hoy", PortletSession.APPLICATION_SCOPE);
             if (hoy == null) {
                 hoy = new DateTime(zone);
             }
@@ -69,7 +70,8 @@ public class InicioPortlet {
             if (hoy.isBefore(inicio)) {
                 hoy = hoy.withDayOfMonth(26);
             }
-            request.getPortletSession().setAttribute("hoy", hoy);
+            log.debug("Subiendo atributo hoy({}) a la sesion",hoy);
+            request.getPortletSession().setAttribute("hoy", hoy, PortletSession.APPLICATION_SCOPE);
 
             // Tags para buscar el titulo del sabado
             String[] tags = getTags(hoy);
@@ -82,7 +84,6 @@ public class InicioPortlet {
 
             log.debug("Buscando el titulo principal");
             for (AssetEntry asset : results) {
-                log.debug("Asset: " + asset.getTitle() + " : " + asset.getDescription() + " : " + asset.getMimeType() + " : " + asset.getClassName());
                 if (asset.getClassName().equals("com.liferay.portlet.journal.model.JournalArticle")) {
                     model.addAttribute("tituloPrincipal", asset.getTitle().toUpperCase());
                 }
@@ -97,13 +98,12 @@ public class InicioPortlet {
 
             log.debug("Buscando la leccion del dia {}", hoy);
             for (AssetEntry asset : results) {
-                log.debug("Asset: " + asset.getTitle() + " : " + asset.getDescription() + " : " + asset.getMimeType() + " : " + asset.getClassName());
                 if (asset.getClassName().equals("com.liferay.portlet.journal.model.JournalArticle")) {
                     JournalArticle ja = JournalArticleLocalServiceUtil.getLatestArticle(asset.getClassPK());
-                    String contenido = JournalArticleLocalServiceUtil.getArticleContent(ja.getGroupId(), ja.getArticleId(), "view", "" + themeDisplay.getLocale(), themeDisplay);
+                    //String contenido = JournalArticleLocalServiceUtil.getArticleContent(ja.getGroupId(), ja.getArticleId(), "view", "" + themeDisplay.getLocale(), themeDisplay);
                     model.addAttribute("leccion", ja);
                     model.addAttribute("titulo", asset.getTitle().toUpperCase());
-                    model.addAttribute("contenido", StringUtil.shorten(contenido, 450));
+                    model.addAttribute("contenido", asset.getDescription());
                     DateTimeFormatter fmt = DateTimeFormat.forPattern("EEEE dd/MM/yyyy");
                     DateTimeFormatter fmt2 = fmt.withLocale(themeDisplay.getLocale());
                     StringBuilder sb = new StringBuilder(fmt2.print(hoy));
@@ -111,42 +111,6 @@ public class InicioPortlet {
                     model.addAttribute("fecha", sb.toString());
                 }
             }
-
-            /*
-            log.debug("Buscando los blogs de dialoga");
-            tags[3] = "dialoga";
-            assetTagIds = AssetTagLocalServiceUtil.getTagIds(scopeGroupId, tags);
-            assetEntryQuery.setAllTagIds(assetTagIds);
-            results = AssetEntryServiceUtil.getEntries(assetEntryQuery);
-            List<Entrada> entries = new ArrayList<Entrada>();
-            for (AssetEntry asset : results) {
-                log.debug("Asset: " + asset.getTitle() + " : " + asset.getDescription() + " : " + asset.getMimeType() + " : " + asset.getClassName());
-                if (asset.getClassName().equals("com.liferay.portlet.blogs.model.BlogsEntry")) {
-                    BlogsEntry entry = BlogsEntryLocalServiceUtil.getEntry(asset.getClassPK());
-                    String resumen = StringUtil.shorten(entry.getContent(), 200);
-                    entries.add(new Entrada(entry.getEntryId(), asset.getPrimaryKey(), resumen));
-                }
-            }
-
-            model.addAttribute("dialoga", entries);
-
-            log.debug("Buscando los blogs de comunica");
-            tags[3] = "comunica";
-            assetTagIds = AssetTagLocalServiceUtil.getTagIds(scopeGroupId, tags);
-            assetEntryQuery.setAllTagIds(assetTagIds);
-            results = AssetEntryServiceUtil.getEntries(assetEntryQuery);
-            entries = new ArrayList<Entrada>();
-            for (AssetEntry asset : results) {
-                log.debug("Asset: " + asset.getTitle() + " : " + asset.getDescription() + " : " + asset.getMimeType() + " : " + asset.getClassName());
-                if (asset.getClassName().equals("com.liferay.portlet.blogs.model.BlogsEntry")) {
-                    BlogsEntry entry = BlogsEntryLocalServiceUtil.getEntry(asset.getClassPK());
-                    String resumen = StringUtil.shorten(entry.getContent(), 200);
-                    entries.add(new Entrada(entry.getEntryId(), asset.getPrimaryKey(), resumen));
-                }
-            }
-
-            model.addAttribute("comunica", entries);
-            */
 
         } catch (Exception e) {
             log.error("No se pudo cargar el contenido", e);

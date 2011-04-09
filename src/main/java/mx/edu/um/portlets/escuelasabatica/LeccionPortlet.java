@@ -1,13 +1,22 @@
 package mx.edu.um.portlets.escuelasabatica;
 
+import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.service.ServiceContext;
+import com.liferay.portal.service.ServiceContextFactory;
 import com.liferay.portal.theme.ThemeDisplay;
+import com.liferay.portal.util.PortalUtil;
 import com.liferay.portlet.asset.model.AssetEntry;
 import com.liferay.portlet.asset.service.AssetEntryServiceUtil;
 import com.liferay.portlet.asset.service.AssetTagLocalServiceUtil;
 import com.liferay.portlet.asset.service.persistence.AssetEntryQuery;
 import com.liferay.portlet.journal.model.JournalArticle;
 import com.liferay.portlet.journal.service.JournalArticleLocalServiceUtil;
+import com.liferay.portlet.messageboards.model.MBMessage;
+import com.liferay.portlet.messageboards.service.MBMessageLocalServiceUtil;
+import com.liferay.portlet.messageboards.service.MBMessageServiceUtil;
 import java.text.NumberFormat;
 import java.util.HashMap;
 import java.util.List;
@@ -15,6 +24,7 @@ import java.util.Map;
 import java.util.TimeZone;
 import javax.portlet.ActionRequest;
 import javax.portlet.ActionResponse;
+import javax.portlet.PortletSession;
 import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
 import mx.edu.um.portlets.escuelasabatica.util.Resultado;
@@ -55,6 +65,7 @@ public class LeccionPortlet {
         TimeZone tz = null;
         DateTimeZone zone = null;
         ThemeDisplay themeDisplay = (ThemeDisplay) request.getAttribute(WebKeys.THEME_DISPLAY);
+        model.addAttribute("currentURL", themeDisplay.getURLCurrent());
         try {
             tz = themeDisplay.getTimeZone();
             zone = DateTimeZone.forID(tz.getID());
@@ -66,16 +77,12 @@ public class LeccionPortlet {
 
             AssetEntryQuery assetEntryQuery = new AssetEntryQuery();
 
-            DateTime hoy = (DateTime) request.getPortletSession().getAttribute("hoy");
+            DateTime hoy = (DateTime) request.getPortletSession().getAttribute("hoy", PortletSession.APPLICATION_SCOPE);
             if (hoy == null) {
+                log.info("No encontre el atributo hoy");
                 hoy = new DateTime(zone);
+                request.getPortletSession().setAttribute("hoy", hoy, PortletSession.APPLICATION_SCOPE);
             }
-
-            DateTime inicio = new DateTime(hoy.getYear(), 3, 26, 0, 0, 0, 0, hoy.getZone());
-            if (hoy.isBefore(inicio)) {
-                hoy = hoy.withDayOfMonth(26);
-            }
-            request.getPortletSession().setAttribute("hoy", hoy);
 
             long[] assetTagIds = AssetTagLocalServiceUtil.getTagIds(scopeGroupId, getTags(hoy));
 
@@ -87,6 +94,7 @@ public class LeccionPortlet {
                 log.debug("Asset: " + asset.getTitle() + " : " + asset.getDescription() + " : " + asset.getMimeType() + " : " + asset.getClassName());
                 if (asset.getClassName().equals("com.liferay.portlet.journal.model.JournalArticle")) {
                     JournalArticle ja = JournalArticleLocalServiceUtil.getLatestArticle(asset.getClassPK());
+                    AssetEntryServiceUtil.incrementViewCounter(asset.getClassName(), ja.getResourcePrimKey());
                     String contenido = JournalArticleLocalServiceUtil.getArticleContent(ja.getGroupId(), ja.getArticleId(), "view", "" + themeDisplay.getLocale(), themeDisplay);
                     model.addAttribute("leccion", ja);
                     model.addAttribute("contenido", contenido);
@@ -95,6 +103,13 @@ public class LeccionPortlet {
                     StringBuilder sb = new StringBuilder(fmt2.print(hoy));
                     sb.replace(0, 1, sb.substring(0, 1).toUpperCase());
                     model.addAttribute("fecha", sb.toString());
+                    model.addAttribute("assetEntry", asset);
+                    int discussionMessagesCount = MBMessageLocalServiceUtil.getDiscussionMessagesCount(PortalUtil.getClassNameId(JournalArticle.class.getName()), ja.getPrimaryKey(), WorkflowConstants.STATUS_APPROVED);
+                    if (discussionMessagesCount > 0) {
+                        model.addAttribute("discussionMessages", true);
+                    }
+
+                    break;
                 }
             }
 
@@ -122,15 +137,12 @@ public class LeccionPortlet {
         } catch (IllegalArgumentException e) {
             zone = DateTimeZone.forID(LeccionPortlet.getConvertedId(tz.getID()));
         }
-        DateTime hoy = (DateTime) request.getPortletSession().getAttribute("hoy");
+        DateTime hoy = (DateTime) request.getPortletSession().getAttribute("hoy", PortletSession.APPLICATION_SCOPE);
         if (hoy == null) {
             hoy = new DateTime(zone);
         }
 
         DateTime inicio = new DateTime(hoy.getYear(), 3, 26, 0, 0, 0, 0, hoy.getZone());
-        if (hoy.isBefore(inicio)) {
-            hoy = hoy.withDayOfMonth(26);
-        }
 
         log.debug("Dias: {}", dias);
         if (dias != null && dias < 0) {
@@ -141,9 +153,97 @@ public class LeccionPortlet {
         if (hoy.isBefore(inicio)) {
             hoy = hoy.withDayOfMonth(26);
         }
-        request.getPortletSession().setAttribute("hoy", hoy);
+        request.getPortletSession().setAttribute("hoy", hoy, PortletSession.APPLICATION_SCOPE);
         sessionStatus.setComplete();
 
+    }
+
+    @RequestMapping(params = "action=discusion")
+    public void discusion(ActionRequest request, ActionResponse response,
+            @ModelAttribute("resultado") Resultado resultado, BindingResult result,
+            Model model, SessionStatus sessionStatus,
+            @RequestParam("entradaId") Long entradaId,
+            @RequestParam("assetId") Long assetId) {
+        log.debug("Ver discusion");
+        log.debug("EntradaId: " + entradaId);
+
+        try {
+            String cmd = ParamUtil.getString(request, Constants.CMD);
+            if (cmd.equals(Constants.ADD) || cmd.equals(Constants.UPDATE)) {
+                MBMessage message = updateMessage(request);
+            } else if (cmd.equals(Constants.DELETE)) {
+                deleteMessage(request);
+            }
+        } catch (Exception e) {
+            log.error("Error al intentar actualizar el mensaje", e);
+        }
+
+        response.setRenderParameter("action", "completo");
+        response.setRenderParameter("entradaId", entradaId.toString());
+        response.setRenderParameter("assetId", assetId.toString());
+    }
+
+    protected void deleteMessage(ActionRequest actionRequest) throws Exception {
+        long groupId = PortalUtil.getScopeGroupId(actionRequest);
+
+        String className = ParamUtil.getString(actionRequest, "className");
+        long classPK = ParamUtil.getLong(actionRequest, "classPK");
+
+        String permissionClassName = ParamUtil.getString(
+                actionRequest, "permissionClassName");
+
+        long permissionClassPK = ParamUtil.getLong(
+                actionRequest, "permissionClassPK");
+
+        long messageId = ParamUtil.getLong(actionRequest, "messageId");
+
+
+        MBMessageServiceUtil.deleteDiscussionMessage(
+                groupId, className, classPK, permissionClassName, permissionClassPK,
+                messageId);
+    }
+
+    protected MBMessage updateMessage(ActionRequest actionRequest)
+            throws Exception {
+
+        String className = ParamUtil.getString(actionRequest, "className");
+        long classPK = ParamUtil.getLong(actionRequest, "classPK");
+        String permissionClassName = ParamUtil.getString(
+                actionRequest, "permissionClassName");
+        long permissionClassPK = ParamUtil.getLong(
+                actionRequest, "permissionClassPK");
+
+        long messageId = ParamUtil.getLong(actionRequest, "messageId");
+
+        long threadId = ParamUtil.getLong(actionRequest, "threadId");
+        long parentMessageId = ParamUtil.getLong(
+                actionRequest, "parentMessageId");
+        String subject = ParamUtil.getString(actionRequest, "subject");
+        String body = ParamUtil.getString(actionRequest, "body");
+
+        ServiceContext serviceContext = ServiceContextFactory.getInstance(
+                MBMessage.class.getName(), actionRequest);
+
+        MBMessage message = null;
+
+        if (messageId <= 0) {
+
+            // Add message
+
+            message = MBMessageServiceUtil.addDiscussionMessage(
+                    serviceContext.getScopeGroupId(), className, classPK,
+                    permissionClassName, permissionClassPK, threadId,
+                    parentMessageId, subject, body, serviceContext);
+        } else {
+
+            // Update message
+
+            message = MBMessageServiceUtil.updateDiscussionMessage(
+                    className, classPK, permissionClassName, permissionClassPK,
+                    messageId, subject, body, serviceContext);
+        }
+
+        return message;
     }
 
     private String[] getTags(DateTime hoy) {

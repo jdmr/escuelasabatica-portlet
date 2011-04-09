@@ -57,7 +57,7 @@
             />
     </div>
     <div style="padding: 0px 10px 0 0;float:left;">
-        <a class="importante" href="${messageUrl}" target="_blank">Discútelo con nosotros</a>
+        <a class="importante" href="${messageUrl}" target="_blank">Opina y aporta</a>
     </div>
     <div>
         <a class="importante" href="${regresar}">Regresar</a>
